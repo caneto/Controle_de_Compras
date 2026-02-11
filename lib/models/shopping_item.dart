@@ -13,4 +13,6 @@ class ShoppingItem {
   bool isBought = false;
 
   DateTime createdAt = DateTime.now();
+
+  String category = 'Outros'; // Default category
 }

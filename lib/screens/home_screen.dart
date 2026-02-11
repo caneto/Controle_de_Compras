@@ -1,16 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:simple_barcode_scanner/simple_barcode_scanner.dart';
+import '../blocs/shopping_list_bloc.dart';
 import '../models/shopping_item.dart';
-import '../services/isar_service.dart';
 
-class HomeScreen extends StatefulWidget {
+class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
-
-  @override
-  State<HomeScreen> createState() => _HomeScreenState();
-}
-
-class _HomeScreenState extends State<HomeScreen> {
-  final IsarService service = IsarService();
 
   @override
   Widget build(BuildContext context) {
@@ -18,54 +13,108 @@ class _HomeScreenState extends State<HomeScreen> {
       appBar: AppBar(
         title: const Text('Controle de Compras'),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-      ),
-      body: StreamBuilder<List<ShoppingItem>>(
-        stream: service.listenToShoppingItems(),
-        builder: (context, snapshot) {
-          if (snapshot.hasError) {
-            return Center(child: Text(snapshot.error.toString()));
-          }
-          if (snapshot.hasData) {
-            final items = snapshot.data!;
-            if (items.isEmpty) {
-              return const Center(
-                child: Text(
-                  'Nenhum item na lista',
-                  style: TextStyle(fontSize: 18),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.qr_code_scanner),
+            onPressed: () async {
+              var res = await Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const SimpleBarcodeScannerPage(),
                 ),
               );
-            }
-            return ListView.builder(
-              itemCount: items.length,
-              itemBuilder: (context, index) {
-                final item = items[index];
-                return ListTile(
-                  title: Text(
-                    item.name,
-                    style: TextStyle(
-                      decoration: item.isBought
-                          ? TextDecoration.lineThrough
-                          : null,
-                    ),
-                  ),
-                  subtitle: Text('R\$ ${item.price.toStringAsFixed(2)}'),
-                  leading: Checkbox(
-                    value: item.isBought,
-                    onChanged: (value) {
-                      service.toggleShoppingItemStatus(item);
-                    },
-                  ),
-                  trailing: IconButton(
-                    icon: const Icon(Icons.delete),
-                    onPressed: () {
-                      service.deleteShoppingItem(item.id);
-                    },
-                  ),
-                );
-              },
+              if (res is String && res != '-1') {
+                if (context.mounted) {
+                  context.read<ShoppingListBloc>().add(ScanBarcodeEvent(res));
+                }
+              }
+            },
+          ),
+        ],
+      ),
+      body: BlocBuilder<ShoppingListBloc, ShoppingListState>(
+        builder: (context, state) {
+          if (state.status == ShoppingListStatus.loading) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          if (state.status == ShoppingListStatus.failure) {
+            return const Center(child: Text('Erro ao carregar lista'));
+          }
+
+          if (state.items.isEmpty) {
+            return const Center(
+              child: Text(
+                'Nenhum item na lista',
+                style: TextStyle(fontSize: 18),
+              ),
             );
           }
-          return const Center(child: CircularProgressIndicator());
+
+          // Group items by category (optional, but requested "logic separation" - simple grouping here for UI)
+          return Column(
+            children: [
+              Expanded(
+                child: ListView.builder(
+                  itemCount: state.items.length,
+                  itemBuilder: (context, index) {
+                    final item = state.items[index];
+                    return ListTile(
+                      title: Text(
+                        item.name,
+                        style: TextStyle(
+                          decoration: item.isBought
+                              ? TextDecoration.lineThrough
+                              : null,
+                        ),
+                      ),
+                      subtitle: Text(
+                        '${item.category} - R\$ ${item.price.toStringAsFixed(2)}',
+                      ),
+                      leading: Checkbox(
+                        value: item.isBought,
+                        onChanged: (value) {
+                          context.read<ShoppingListBloc>().add(
+                            ToggleShoppingItem(item),
+                          );
+                        },
+                      ),
+                      trailing: IconButton(
+                        icon: const Icon(Icons.delete),
+                        onPressed: () {
+                          context.read<ShoppingListBloc>().add(
+                            DeleteShoppingItem(item.id),
+                          );
+                        },
+                      ),
+                    );
+                  },
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.all(16.0),
+                color: Theme.of(context).colorScheme.primaryContainer,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      'Total do Carrinho:',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    Text(
+                      'R\$ ${state.totalPrice.toStringAsFixed(2)}',
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          );
         },
       ),
       floatingActionButton: FloatingActionButton(
@@ -77,61 +126,85 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  void _showAddItemDialog(BuildContext context) {
+  void _showAddItemDialog(BuildContext rootContext) {
     final nameController = TextEditingController();
     final priceController = TextEditingController();
+    String selectedCategory = 'Outros';
+    final categories = [
+      'Hortifruti',
+      'Biscoitos',
+      'Bebidas',
+      'Limpeza',
+      'Outros',
+    ];
 
     showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Adicionar Item'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: nameController,
-              decoration: const InputDecoration(hintText: 'Nome do item'),
-              autofocus: true,
-            ),
-            const SizedBox(height: 10),
-            TextField(
-              controller: priceController,
-              decoration: const InputDecoration(hintText: 'Preço (R\$)'),
-              keyboardType: const TextInputType.numberWithOptions(
-                decimal: true,
+      context: rootContext,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
+          title: const Text('Adicionar Item'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: nameController,
+                decoration: const InputDecoration(hintText: 'Nome do item'),
+                autofocus: true,
               ),
-              onSubmitted: (_) =>
-                  _submit(context, nameController, priceController),
+              const SizedBox(height: 10),
+              TextField(
+                controller: priceController,
+                decoration: const InputDecoration(hintText: 'Preço (R\$)'),
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
+              ),
+              const SizedBox(height: 10),
+              DropdownButton<String>(
+                value: selectedCategory,
+                isExpanded: true,
+                items: categories.map((String category) {
+                  return DropdownMenuItem<String>(
+                    value: category,
+                    child: Text(category),
+                  );
+                }).toList(),
+                onChanged: (String? newValue) {
+                  setState(() {
+                    selectedCategory = newValue!;
+                  });
+                },
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text('Cancelar'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                if (nameController.text.isNotEmpty) {
+                  final price =
+                      double.tryParse(
+                        priceController.text.replaceAll(',', '.'),
+                      ) ??
+                      0.0;
+                  rootContext.read<ShoppingListBloc>().add(
+                    AddShoppingItem(
+                      nameController.text,
+                      price,
+                      selectedCategory,
+                    ),
+                  );
+                  Navigator.pop(dialogContext);
+                }
+              },
+              child: const Text('Adicionar'),
             ),
           ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancelar'),
-          ),
-          ElevatedButton(
-            onPressed: () => _submit(context, nameController, priceController),
-            child: const Text('Adicionar'),
-          ),
-        ],
       ),
     );
-  }
-
-  void _submit(
-    BuildContext context,
-    TextEditingController nameController,
-    TextEditingController priceController,
-  ) {
-    if (nameController.text.isNotEmpty) {
-      final price =
-          double.tryParse(priceController.text.replaceAll(',', '.')) ?? 0.0;
-      final newItem = ShoppingItem()
-        ..name = nameController.text
-        ..price = price;
-      service.saveShoppingItem(newItem);
-      Navigator.pop(context);
-    }
   }
 }

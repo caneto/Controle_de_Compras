@@ -38,6 +38,9 @@ dependencies:
   isar_community: ^3.3.0
   isar_community_flutter_libs: ^3.3.0
   path_provider: ^2.1.5
+  flutter_bloc: ^9.1.1
+  equatable: ^2.0.8
+  simple_barcode_scanner: ^0.4.0
 
 dev_dependencies:
   flutter_test:

@@ -17,14 +17,19 @@ const ShoppingItemSchema = CollectionSchema(
   name: r'ShoppingItem',
   id: 8757760147473695853,
   properties: {
-    r'createdAt': PropertySchema(
+    r'category': PropertySchema(
       id: 0,
+      name: r'category',
+      type: IsarType.string,
+    ),
+    r'createdAt': PropertySchema(
+      id: 1,
       name: r'createdAt',
       type: IsarType.dateTime,
     ),
-    r'isBought': PropertySchema(id: 1, name: r'isBought', type: IsarType.bool),
-    r'name': PropertySchema(id: 2, name: r'name', type: IsarType.string),
-    r'price': PropertySchema(id: 3, name: r'price', type: IsarType.double),
+    r'isBought': PropertySchema(id: 2, name: r'isBought', type: IsarType.bool),
+    r'name': PropertySchema(id: 3, name: r'name', type: IsarType.string),
+    r'price': PropertySchema(id: 4, name: r'price', type: IsarType.double),
   },
 
   estimateSize: _shoppingItemEstimateSize,
@@ -48,6 +53,7 @@ int _shoppingItemEstimateSize(
   Map<Type, List<int>> allOffsets,
 ) {
   var bytesCount = offsets.last;
+  bytesCount += 3 + object.category.length * 3;
   bytesCount += 3 + object.name.length * 3;
   return bytesCount;
 }
@@ -58,10 +64,11 @@ void _shoppingItemSerialize(
   List<int> offsets,
   Map<Type, List<int>> allOffsets,
 ) {
-  writer.writeDateTime(offsets[0], object.createdAt);
-  writer.writeBool(offsets[1], object.isBought);
-  writer.writeString(offsets[2], object.name);
-  writer.writeDouble(offsets[3], object.price);
+  writer.writeString(offsets[0], object.category);
+  writer.writeDateTime(offsets[1], object.createdAt);
+  writer.writeBool(offsets[2], object.isBought);
+  writer.writeString(offsets[3], object.name);
+  writer.writeDouble(offsets[4], object.price);
 }
 
 ShoppingItem _shoppingItemDeserialize(
@@ -71,11 +78,12 @@ ShoppingItem _shoppingItemDeserialize(
   Map<Type, List<int>> allOffsets,
 ) {
   final object = ShoppingItem();
-  object.createdAt = reader.readDateTime(offsets[0]);
+  object.category = reader.readString(offsets[0]);
+  object.createdAt = reader.readDateTime(offsets[1]);
   object.id = id;
-  object.isBought = reader.readBool(offsets[1]);
-  object.name = reader.readString(offsets[2]);
-  object.price = reader.readDouble(offsets[3]);
+  object.isBought = reader.readBool(offsets[2]);
+  object.name = reader.readString(offsets[3]);
+  object.price = reader.readDouble(offsets[4]);
   return object;
 }
 
@@ -87,12 +95,14 @@ P _shoppingItemDeserializeProp<P>(
 ) {
   switch (propertyId) {
     case 0:
-      return (reader.readDateTime(offset)) as P;
-    case 1:
-      return (reader.readBool(offset)) as P;
-    case 2:
       return (reader.readString(offset)) as P;
+    case 1:
+      return (reader.readDateTime(offset)) as P;
+    case 2:
+      return (reader.readBool(offset)) as P;
     case 3:
+      return (reader.readString(offset)) as P;
+    case 4:
       return (reader.readDouble(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -199,6 +209,147 @@ extension ShoppingItemQueryWhere
 
 extension ShoppingItemQueryFilter
     on QueryBuilder<ShoppingItem, ShoppingItem, QFilterCondition> {
+  QueryBuilder<ShoppingItem, ShoppingItem, QAfterFilterCondition>
+  categoryEqualTo(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(
+          property: r'category',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<ShoppingItem, ShoppingItem, QAfterFilterCondition>
+  categoryGreaterThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(
+          include: include,
+          property: r'category',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<ShoppingItem, ShoppingItem, QAfterFilterCondition>
+  categoryLessThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.lessThan(
+          include: include,
+          property: r'category',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<ShoppingItem, ShoppingItem, QAfterFilterCondition>
+  categoryBetween(
+    String lower,
+    String upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.between(
+          property: r'category',
+          lower: lower,
+          includeLower: includeLower,
+          upper: upper,
+          includeUpper: includeUpper,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<ShoppingItem, ShoppingItem, QAfterFilterCondition>
+  categoryStartsWith(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.startsWith(
+          property: r'category',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<ShoppingItem, ShoppingItem, QAfterFilterCondition>
+  categoryEndsWith(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.endsWith(
+          property: r'category',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<ShoppingItem, ShoppingItem, QAfterFilterCondition>
+  categoryContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.contains(
+          property: r'category',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<ShoppingItem, ShoppingItem, QAfterFilterCondition>
+  categoryMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.matches(
+          property: r'category',
+          wildcard: pattern,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<ShoppingItem, ShoppingItem, QAfterFilterCondition>
+  categoryIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(property: r'category', value: ''),
+      );
+    });
+  }
+
+  QueryBuilder<ShoppingItem, ShoppingItem, QAfterFilterCondition>
+  categoryIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(property: r'category', value: ''),
+      );
+    });
+  }
+
   QueryBuilder<ShoppingItem, ShoppingItem, QAfterFilterCondition>
   createdAtEqualTo(DateTime value) {
     return QueryBuilder.apply(this, (query) {
@@ -553,6 +704,18 @@ extension ShoppingItemQueryLinks
 
 extension ShoppingItemQuerySortBy
     on QueryBuilder<ShoppingItem, ShoppingItem, QSortBy> {
+  QueryBuilder<ShoppingItem, ShoppingItem, QAfterSortBy> sortByCategory() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'category', Sort.asc);
+    });
+  }
+
+  QueryBuilder<ShoppingItem, ShoppingItem, QAfterSortBy> sortByCategoryDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'category', Sort.desc);
+    });
+  }
+
   QueryBuilder<ShoppingItem, ShoppingItem, QAfterSortBy> sortByCreatedAt() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'createdAt', Sort.asc);
@@ -604,6 +767,18 @@ extension ShoppingItemQuerySortBy
 
 extension ShoppingItemQuerySortThenBy
     on QueryBuilder<ShoppingItem, ShoppingItem, QSortThenBy> {
+  QueryBuilder<ShoppingItem, ShoppingItem, QAfterSortBy> thenByCategory() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'category', Sort.asc);
+    });
+  }
+
+  QueryBuilder<ShoppingItem, ShoppingItem, QAfterSortBy> thenByCategoryDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'category', Sort.desc);
+    });
+  }
+
   QueryBuilder<ShoppingItem, ShoppingItem, QAfterSortBy> thenByCreatedAt() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'createdAt', Sort.asc);
@@ -667,6 +842,14 @@ extension ShoppingItemQuerySortThenBy
 
 extension ShoppingItemQueryWhereDistinct
     on QueryBuilder<ShoppingItem, ShoppingItem, QDistinct> {
+  QueryBuilder<ShoppingItem, ShoppingItem, QDistinct> distinctByCategory({
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'category', caseSensitive: caseSensitive);
+    });
+  }
+
   QueryBuilder<ShoppingItem, ShoppingItem, QDistinct> distinctByCreatedAt() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'createdAt');
@@ -699,6 +882,12 @@ extension ShoppingItemQueryProperty
   QueryBuilder<ShoppingItem, int, QQueryOperations> idProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'id');
+    });
+  }
+
+  QueryBuilder<ShoppingItem, String, QQueryOperations> categoryProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'category');
     });
   }
 
