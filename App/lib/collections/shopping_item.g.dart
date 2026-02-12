@@ -17,15 +17,16 @@ const ShoppingItemSchema = CollectionSchema(
   name: r'ShoppingItem',
   id: 8757760147473695853,
   properties: {
+    r'barcode': PropertySchema(id: 0, name: r'barcode', type: IsarType.string),
     r'createdAt': PropertySchema(
-      id: 0,
+      id: 1,
       name: r'createdAt',
       type: IsarType.dateTime,
     ),
-    r'isBought': PropertySchema(id: 1, name: r'isBought', type: IsarType.bool),
-    r'name': PropertySchema(id: 2, name: r'name', type: IsarType.string),
-    r'price': PropertySchema(id: 3, name: r'price', type: IsarType.double),
-    r'quantity': PropertySchema(id: 4, name: r'quantity', type: IsarType.long),
+    r'isBought': PropertySchema(id: 2, name: r'isBought', type: IsarType.bool),
+    r'name': PropertySchema(id: 3, name: r'name', type: IsarType.string),
+    r'price': PropertySchema(id: 4, name: r'price', type: IsarType.double),
+    r'quantity': PropertySchema(id: 5, name: r'quantity', type: IsarType.long),
   },
 
   estimateSize: _shoppingItemEstimateSize,
@@ -34,7 +35,14 @@ const ShoppingItemSchema = CollectionSchema(
   deserializeProp: _shoppingItemDeserializeProp,
   idName: r'id',
   indexes: {},
-  links: {},
+  links: {
+    r'category': LinkSchema(
+      id: 4635780210526313107,
+      name: r'category',
+      target: r'Category',
+      single: true,
+    ),
+  },
   embeddedSchemas: {},
 
   getId: _shoppingItemGetId,
@@ -49,6 +57,12 @@ int _shoppingItemEstimateSize(
   Map<Type, List<int>> allOffsets,
 ) {
   var bytesCount = offsets.last;
+  {
+    final value = object.barcode;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
   bytesCount += 3 + object.name.length * 3;
   return bytesCount;
 }
@@ -59,11 +73,12 @@ void _shoppingItemSerialize(
   List<int> offsets,
   Map<Type, List<int>> allOffsets,
 ) {
-  writer.writeDateTime(offsets[0], object.createdAt);
-  writer.writeBool(offsets[1], object.isBought);
-  writer.writeString(offsets[2], object.name);
-  writer.writeDouble(offsets[3], object.price);
-  writer.writeLong(offsets[4], object.quantity);
+  writer.writeString(offsets[0], object.barcode);
+  writer.writeDateTime(offsets[1], object.createdAt);
+  writer.writeBool(offsets[2], object.isBought);
+  writer.writeString(offsets[3], object.name);
+  writer.writeDouble(offsets[4], object.price);
+  writer.writeLong(offsets[5], object.quantity);
 }
 
 ShoppingItem _shoppingItemDeserialize(
@@ -73,12 +88,13 @@ ShoppingItem _shoppingItemDeserialize(
   Map<Type, List<int>> allOffsets,
 ) {
   final object = ShoppingItem();
-  object.createdAt = reader.readDateTime(offsets[0]);
+  object.barcode = reader.readStringOrNull(offsets[0]);
+  object.createdAt = reader.readDateTime(offsets[1]);
   object.id = id;
-  object.isBought = reader.readBool(offsets[1]);
-  object.name = reader.readString(offsets[2]);
-  object.price = reader.readDouble(offsets[3]);
-  object.quantity = reader.readLong(offsets[4]);
+  object.isBought = reader.readBool(offsets[2]);
+  object.name = reader.readString(offsets[3]);
+  object.price = reader.readDouble(offsets[4]);
+  object.quantity = reader.readLong(offsets[5]);
   return object;
 }
 
@@ -90,14 +106,16 @@ P _shoppingItemDeserializeProp<P>(
 ) {
   switch (propertyId) {
     case 0:
-      return (reader.readDateTime(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 1:
-      return (reader.readBool(offset)) as P;
+      return (reader.readDateTime(offset)) as P;
     case 2:
-      return (reader.readString(offset)) as P;
+      return (reader.readBool(offset)) as P;
     case 3:
-      return (reader.readDouble(offset)) as P;
+      return (reader.readString(offset)) as P;
     case 4:
+      return (reader.readDouble(offset)) as P;
+    case 5:
       return (reader.readLong(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -109,7 +127,7 @@ Id _shoppingItemGetId(ShoppingItem object) {
 }
 
 List<IsarLinkBase<dynamic>> _shoppingItemGetLinks(ShoppingItem object) {
-  return [];
+  return [object.category];
 }
 
 void _shoppingItemAttach(
@@ -118,6 +136,7 @@ void _shoppingItemAttach(
   ShoppingItem object,
 ) {
   object.id = id;
+  object.category.attach(col, col.isar.collection<Category>(), r'category', id);
 }
 
 extension ShoppingItemQueryWhereSort
@@ -204,6 +223,165 @@ extension ShoppingItemQueryWhere
 
 extension ShoppingItemQueryFilter
     on QueryBuilder<ShoppingItem, ShoppingItem, QFilterCondition> {
+  QueryBuilder<ShoppingItem, ShoppingItem, QAfterFilterCondition>
+  barcodeIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        const FilterCondition.isNull(property: r'barcode'),
+      );
+    });
+  }
+
+  QueryBuilder<ShoppingItem, ShoppingItem, QAfterFilterCondition>
+  barcodeIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        const FilterCondition.isNotNull(property: r'barcode'),
+      );
+    });
+  }
+
+  QueryBuilder<ShoppingItem, ShoppingItem, QAfterFilterCondition>
+  barcodeEqualTo(String? value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(
+          property: r'barcode',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<ShoppingItem, ShoppingItem, QAfterFilterCondition>
+  barcodeGreaterThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(
+          include: include,
+          property: r'barcode',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<ShoppingItem, ShoppingItem, QAfterFilterCondition>
+  barcodeLessThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.lessThan(
+          include: include,
+          property: r'barcode',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<ShoppingItem, ShoppingItem, QAfterFilterCondition>
+  barcodeBetween(
+    String? lower,
+    String? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.between(
+          property: r'barcode',
+          lower: lower,
+          includeLower: includeLower,
+          upper: upper,
+          includeUpper: includeUpper,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<ShoppingItem, ShoppingItem, QAfterFilterCondition>
+  barcodeStartsWith(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.startsWith(
+          property: r'barcode',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<ShoppingItem, ShoppingItem, QAfterFilterCondition>
+  barcodeEndsWith(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.endsWith(
+          property: r'barcode',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<ShoppingItem, ShoppingItem, QAfterFilterCondition>
+  barcodeContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.contains(
+          property: r'barcode',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<ShoppingItem, ShoppingItem, QAfterFilterCondition>
+  barcodeMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.matches(
+          property: r'barcode',
+          wildcard: pattern,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<ShoppingItem, ShoppingItem, QAfterFilterCondition>
+  barcodeIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(property: r'barcode', value: ''),
+      );
+    });
+  }
+
+  QueryBuilder<ShoppingItem, ShoppingItem, QAfterFilterCondition>
+  barcodeIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(property: r'barcode', value: ''),
+      );
+    });
+  }
+
   QueryBuilder<ShoppingItem, ShoppingItem, QAfterFilterCondition>
   createdAtEqualTo(DateTime value) {
     return QueryBuilder.apply(this, (query) {
@@ -609,10 +787,37 @@ extension ShoppingItemQueryObject
     on QueryBuilder<ShoppingItem, ShoppingItem, QFilterCondition> {}
 
 extension ShoppingItemQueryLinks
-    on QueryBuilder<ShoppingItem, ShoppingItem, QFilterCondition> {}
+    on QueryBuilder<ShoppingItem, ShoppingItem, QFilterCondition> {
+  QueryBuilder<ShoppingItem, ShoppingItem, QAfterFilterCondition> category(
+    FilterQuery<Category> q,
+  ) {
+    return QueryBuilder.apply(this, (query) {
+      return query.link(q, r'category');
+    });
+  }
+
+  QueryBuilder<ShoppingItem, ShoppingItem, QAfterFilterCondition>
+  categoryIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.linkLength(r'category', 0, true, 0, true);
+    });
+  }
+}
 
 extension ShoppingItemQuerySortBy
     on QueryBuilder<ShoppingItem, ShoppingItem, QSortBy> {
+  QueryBuilder<ShoppingItem, ShoppingItem, QAfterSortBy> sortByBarcode() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'barcode', Sort.asc);
+    });
+  }
+
+  QueryBuilder<ShoppingItem, ShoppingItem, QAfterSortBy> sortByBarcodeDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'barcode', Sort.desc);
+    });
+  }
+
   QueryBuilder<ShoppingItem, ShoppingItem, QAfterSortBy> sortByCreatedAt() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'createdAt', Sort.asc);
@@ -676,6 +881,18 @@ extension ShoppingItemQuerySortBy
 
 extension ShoppingItemQuerySortThenBy
     on QueryBuilder<ShoppingItem, ShoppingItem, QSortThenBy> {
+  QueryBuilder<ShoppingItem, ShoppingItem, QAfterSortBy> thenByBarcode() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'barcode', Sort.asc);
+    });
+  }
+
+  QueryBuilder<ShoppingItem, ShoppingItem, QAfterSortBy> thenByBarcodeDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'barcode', Sort.desc);
+    });
+  }
+
   QueryBuilder<ShoppingItem, ShoppingItem, QAfterSortBy> thenByCreatedAt() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'createdAt', Sort.asc);
@@ -751,6 +968,14 @@ extension ShoppingItemQuerySortThenBy
 
 extension ShoppingItemQueryWhereDistinct
     on QueryBuilder<ShoppingItem, ShoppingItem, QDistinct> {
+  QueryBuilder<ShoppingItem, ShoppingItem, QDistinct> distinctByBarcode({
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'barcode', caseSensitive: caseSensitive);
+    });
+  }
+
   QueryBuilder<ShoppingItem, ShoppingItem, QDistinct> distinctByCreatedAt() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'createdAt');
@@ -789,6 +1014,12 @@ extension ShoppingItemQueryProperty
   QueryBuilder<ShoppingItem, int, QQueryOperations> idProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'id');
+    });
+  }
+
+  QueryBuilder<ShoppingItem, String?, QQueryOperations> barcodeProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'barcode');
     });
   }
 
